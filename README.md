@@ -38,6 +38,12 @@ bun test
 bun run build
 ```
 
+## Release governance
+
+Public API changes start with a Changeset, then the reviewed version bump is
+published through the repository's exact `@vectojs/sheets-core@<version>` tag
+workflow. `CHANGELOG.md` remains the human-readable release record.
+
 ## License
 
 [MIT](./LICENSE) © 2026 Xuepoo
