@@ -18,6 +18,13 @@ interface Cell {
   reads: { scalars: Set<string>; ranges: Rect[] } | null;
 }
 
+/** Serializable view of a populated sparse document cell. */
+export interface PopulatedCell {
+  row: number;
+  col: number;
+  raw: string;
+}
+
 /**
  * Sparse spreadsheet model: a Map of only the non-empty cells, a reverse
  * dependency index for scalar refs, and a rect list for range refs (a range
@@ -77,6 +84,41 @@ export class SheetModel {
   /** Number of non-empty cells (for HUD/debug). */
   get cellCount(): number {
     return this.cells.size;
+  }
+
+  /**
+   * Smallest normalized rectangle containing every populated cell, or null for
+   * an empty document. This is a document query, not a viewport concern.
+   */
+  getUsedRange(): Rect | null {
+    if (this.cells.size === 0) return null;
+    let r1 = this.rows - 1;
+    let c1 = this.cols - 1;
+    let r2 = 0;
+    let c2 = 0;
+    for (const key of this.cells.keys()) {
+      const { row, col } = parseKey(key);
+      r1 = Math.min(r1, row);
+      c1 = Math.min(c1, col);
+      r2 = Math.max(r2, row);
+      c2 = Math.max(c2, col);
+    }
+    return { r1, c1, r2, c2 };
+  }
+
+  /**
+   * Enumerate only existing cells in a normalized document rectangle. This is
+   * the safe primitive for clear/cut: selecting the complete 10,000 × 100
+   * sheet must not create one million empty writes.
+   */
+  getCellsInRange(range: Rect): PopulatedCell[] {
+    const records: PopulatedCell[] = [];
+    for (const [key, cell] of this.cells) {
+      const { row, col } = parseKey(key);
+      if (rectContains(range, row, col))
+        records.push({ row, col, raw: cell.raw });
+    }
+    return records.sort((a, b) => a.row - b.row || a.col - b.col);
   }
 
   setCell(row: number, col: number, raw: string): void {

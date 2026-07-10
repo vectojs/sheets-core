@@ -23,6 +23,21 @@ describe("SheetModel basics", () => {
     expect(m.cellCount).toBe(0);
   });
 
+  it("reports sparse used bounds and only populated cells inside a range", () => {
+    const m = new SheetModel(20, 10);
+    m.setCell(2, 4, "right");
+    m.setCell(8, 1, "left");
+
+    expect(m.getUsedRange()).toEqual({ r1: 2, c1: 1, r2: 8, c2: 4 });
+    expect(m.getCellsInRange({ r1: 0, c1: 0, r2: 3, c2: 5 })).toEqual([
+      { row: 2, col: 4, raw: "right" },
+    ]);
+
+    m.setCell(2, 4, "");
+    m.setCell(8, 1, "");
+    expect(m.getUsedRange()).toBeNull();
+  });
+
   it("evaluates formulas and keeps raw text", () => {
     const m = new SheetModel();
     m.setCell(0, 0, "2");

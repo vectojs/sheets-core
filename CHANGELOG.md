@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.1
+
+### Added
+
+- Sparse used-range and in-range populated-cell queries for safe selection,
+  clear, cut, and future document automation operations.
+
 ## 0.1.0
 
 ### Added
