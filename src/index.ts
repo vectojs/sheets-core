@@ -2,6 +2,7 @@ export * from "./model/cellRef";
 export * from "./model/SheetClipboard";
 export * from "./model/SheetHistory";
 export * from "./model/SheetModel";
+export * from "./model/Workbook";
 export * from "./model/demoData";
 export * from "./model/formula/evaluator";
 export * from "./model/formula/functions";

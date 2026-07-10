@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.2
+
+### Added
+
+- Ordered `Workbook` document with stable sheet IDs, naming, active-sheet
+  selection, creation, renaming, deletion, and versioned sparse JSON snapshots.
+
 ## 0.1.1
 
 ### Added
