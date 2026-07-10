@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.5
+
+### Patch Changes
+
+- Add common numeric, logical, and error-recovery functions: `ABS`, `ROUND`,
+  `ROUNDUP`, `ROUNDDOWN`, `AND`, `OR`, `NOT`, and `IFERROR`.
+
 ## 0.1.4
 
 ### Patch Changes

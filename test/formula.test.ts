@@ -103,4 +103,15 @@ describe("functions", () => {
     const v = run("AVG(A9:A10)", {});
     expect(isErr(v) && v.error).toBe("#DIV/0!");
   });
+
+  it("supports common rounding, logic, and error-recovery functions", () => {
+    expect(run("ABS(-2.5)")).toBe(2.5);
+    expect(run("ROUND(1.235, 2)")).toBe(1.24);
+    expect(run("ROUNDUP(-1.21, 1)")).toBe(-1.3);
+    expect(run("ROUNDDOWN(-1.29, 1)")).toBe(-1.2);
+    expect(run("AND(1, A9)", sheet)).toBe(false);
+    expect(run("OR(A9, A1)", sheet)).toBe(true);
+    expect(run("NOT(A9)", sheet)).toBe(true);
+    expect(run('IFERROR(1/0, "fallback")')).toBe("fallback");
+  });
 });

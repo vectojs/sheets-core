@@ -9,6 +9,13 @@ serialization, workbook snapshots, and transactional history. It intentionally h
 Canvas, DOM, browser, or MCP dependency, so a website, CLI, skill, or MCP tool
 can operate on the same document semantics.
 
+## Supported formulas
+
+The evaluator supports arithmetic, references, ranges, percent, exponentiation,
+and text concatenation. Built-in functions include `SUM`, `AVG`/`AVERAGE`,
+`MIN`, `MAX`, `COUNT`, `IF`, `CONCAT`, `ABS`, `ROUND`, `ROUNDUP`,
+`ROUNDDOWN`, `AND`, `OR`, `NOT`, and `IFERROR`.
+
 ## Install
 
 ```bash
