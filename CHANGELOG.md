@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+### Patch Changes
+
+- Coerce case-insensitive `TRUE` and `FALSE` cell literals to boolean values while
+  preserving their raw editable text.
+
 ## 0.3.0
 
 ### Added

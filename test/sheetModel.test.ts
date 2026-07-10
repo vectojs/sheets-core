@@ -15,6 +15,17 @@ describe("SheetModel basics", () => {
     expect(m.cellCount).toBe(3);
   });
 
+  it("coerces Excel-compatible boolean literals without changing their raw text", () => {
+    const m = new SheetModel();
+    m.setCell(0, 0, "TRUE");
+    m.setCell(0, 1, "false");
+
+    expect(m.getValue(0, 0)).toBe(true);
+    expect(m.getValue(0, 1)).toBe(false);
+    expect(m.getRaw(0, 1)).toBe("false");
+    expect(m.getDisplay(0, 1)).toBe("FALSE");
+  });
+
   it("clears cells on empty input", () => {
     const m = new SheetModel();
     m.setCell(0, 0, "1");

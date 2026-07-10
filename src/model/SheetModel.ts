@@ -371,7 +371,15 @@ export class SheetModel {
       this.cells.set(key, cell);
     } else {
       const n = Number(trimmed);
-      const value: Value = trimmed !== "" && !Number.isNaN(n) ? n : raw;
+      const normalizedBoolean = trimmed.toUpperCase();
+      const value: Value =
+        normalizedBoolean === "TRUE"
+          ? true
+          : normalizedBoolean === "FALSE"
+            ? false
+            : trimmed !== "" && !Number.isNaN(n)
+              ? n
+              : raw;
       this.cells.set(key, {
         raw,
         value,
