@@ -43,6 +43,12 @@ describe("parser", () => {
       expect(() => parse(bad)).toThrow(ParseError);
     }
   });
+
+  it("treats #REF! as an evaluable formula error literal", () => {
+    const value = run("#REF!");
+    expect(isErr(value) && value.error).toBe("#REF!");
+    expect(run("IFERROR(#REF!, 42)")).toBe(42);
+  });
 });
 
 describe("evaluator", () => {

@@ -1,6 +1,13 @@
 /** Formula tokenizer. Input is the text AFTER the leading `=`. */
 
-export type TokenType = "num" | "str" | "ref" | "ident" | "op" | "eof";
+export type TokenType =
+  | "num"
+  | "str"
+  | "ref"
+  | "error"
+  | "ident"
+  | "op"
+  | "eof";
 
 export interface Token {
   type: TokenType;
@@ -9,6 +16,7 @@ export interface Token {
 }
 
 const REF_RE = /^\$?[A-Z]{1,3}\$?\d+/;
+const ERROR_RE = /^#REF!/;
 const IDENT_RE = /^[A-Za-z_][A-Za-z0-9_]*/;
 const NUM_RE = /^\d+(\.\d+)?|^\.\d+/;
 const OPS = new Set(["+", "-", "*", "/", "^", "%", "&", "(", ")", ",", ":"]);
@@ -49,6 +57,12 @@ export function lex(src: string): Token[] {
       continue;
     }
     const rest = src.slice(i);
+    const error = ERROR_RE.exec(rest);
+    if (error) {
+      tokens.push({ type: "error", text: error[0], pos: i });
+      i += error[0].length;
+      continue;
+    }
     const num = NUM_RE.exec(rest);
     if (num) {
       tokens.push({ type: "num", text: num[0], pos: i });

@@ -59,6 +59,8 @@ export function evaluate(node: Node, ctx: EvalContext): Value {
       return node.v;
     case "str":
       return node.v;
+    case "error":
+      return err(node.code);
     case "ref":
       return ctx.getCell(node.row, node.col);
     case "range":

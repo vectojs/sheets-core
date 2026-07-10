@@ -3,6 +3,7 @@ export * from "./model/CellFormat";
 export * from "./model/SheetClipboard";
 export * from "./model/SheetHistory";
 export * from "./model/SheetModel";
+export * from "./model/SheetStructure";
 export * from "./model/Workbook";
 export * from "./model/WorkbookCodec";
 export * from "./model/demoData";

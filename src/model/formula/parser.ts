@@ -10,6 +10,7 @@ import { lex, LexError, type Token } from "./lexer";
 export type Node =
   | { t: "num"; v: number }
   | { t: "str"; v: string }
+  | { t: "error"; code: "#REF!" }
   | { t: "ref"; row: number; col: number }
   | { t: "range"; rect: Rect }
   | { t: "bin"; op: "+" | "-" | "*" | "/" | "^" | "&"; l: Node; r: Node }
@@ -91,6 +92,7 @@ export function parse(src: string): Node {
     const t = next();
     if (t.type === "num") return { t: "num", v: Number(t.text) };
     if (t.type === "str") return { t: "str", v: t.text };
+    if (t.type === "error") return { t: "error", code: "#REF!" };
     if (t.type === "ref") {
       const a = parseA1(t.text);
       if (!a) throw new ParseError(`Bad reference "${t.text}" at ${t.pos}`);
