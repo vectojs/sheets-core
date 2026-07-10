@@ -4,6 +4,9 @@
 
 ### Added
 
+- Published the established spreadsheet core under the independent Numera
+  product identity and `@vectojs/numera-core` package name.
+- Adopted the workspace TypeScript 7 declaration-build baseline.
 - Sparse, serializable row and column axis metrics with default sizes and
   validated overrides.
 - Undoable axis-size history and structural-operation remapping for resized

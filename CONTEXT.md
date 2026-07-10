@@ -1,4 +1,4 @@
-# Sheets Core Context
+# Numera Core Context
 
 ## Ubiquitous language
 

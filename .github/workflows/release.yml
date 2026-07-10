@@ -3,7 +3,7 @@ name: Publish Package
 on:
   push:
     tags:
-      - "@vectojs/sheets-core@*"
+      - "@vectojs/numera-core@*"
 
 permissions:
   contents: write
@@ -21,7 +21,7 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          EXPECTED_VERSION="${TAG#@vectojs/sheets-core@}"
+          EXPECTED_VERSION="${TAG#@vectojs/numera-core@}"
           PACKAGE_VERSION=$(bun -e "console.log(require('./package.json').version)")
           if [ "$EXPECTED_VERSION" != "$PACKAGE_VERSION" ]; then
             echo "::error::Tag version $EXPECTED_VERSION does not match package.json version $PACKAGE_VERSION"

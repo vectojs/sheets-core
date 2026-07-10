@@ -1,10 +1,10 @@
-# @vectojs/sheets-core
+# @vectojs/numera-core
 
-> Pure spreadsheet document primitives for the VectoJS Sheets family.
+> Pure spreadsheet document primitives for the Numera family.
 
 [![MIT license](https://img.shields.io/badge/license-MIT-6366f1.svg)](./LICENSE)
 
-`@vectojs/sheets-core` owns spreadsheet state, cell formatting, formula evaluation, clipboard
+`@vectojs/numera-core` owns spreadsheet state, cell formatting, formula evaluation, clipboard
 serialization, workbook snapshots, and transactional history. It intentionally has no VectoJS,
 Canvas, DOM, browser, or MCP dependency, so a website, CLI, skill, or MCP tool
 can operate on the same document semantics.
@@ -28,13 +28,13 @@ and text concatenation. Built-in functions include `SUM`, `AVG`/`AVERAGE`,
 ## Install
 
 ```bash
-bun add @vectojs/sheets-core
+bun add @vectojs/numera-core
 ```
 
 ## Use
 
 ```ts
-import { SheetHistory, SheetModel } from "@vectojs/sheets-core";
+import { SheetHistory, SheetModel } from "@vectojs/numera-core";
 
 const sheet = new SheetModel();
 const history = new SheetHistory(sheet);
@@ -58,7 +58,7 @@ bun run build
 ## Release governance
 
 Public API changes start with a Changeset, then the reviewed version bump is
-published through the repository's exact `@vectojs/sheets-core@<version>` tag
+published through the repository's exact `@vectojs/numera-core@<version>` tag
 workflow. `CHANGELOG.md` remains the human-readable release record.
 
 ## License

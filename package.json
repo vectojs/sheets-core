@@ -1,19 +1,19 @@
 {
-  "name": "@vectojs/sheets-core",
+  "name": "@vectojs/numera-core",
   "version": "0.3.0",
-  "description": "Pure spreadsheet document, formula, clipboard, and history primitives for the VectoJS Sheets family.",
+  "description": "Pure spreadsheet document, formula, clipboard, and history primitives for the Numera family.",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vectojs/sheets-core.git"
+    "url": "git+https://github.com/vectojs/numera-core.git"
   },
   "bugs": {
-    "url": "https://github.com/vectojs/sheets-core/issues"
+    "url": "https://github.com/vectojs/numera-core/issues"
   },
-  "homepage": "https://github.com/vectojs/sheets-core#readme",
+  "homepage": "https://github.com/vectojs/numera-core#readme",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -31,7 +31,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "build": "tsup src/index.ts --format cjs,esm --clean && tsc -p tsconfig.build.json --emitDeclarationOnly --outDir dist",
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "test": "bun test",
@@ -44,6 +44,6 @@
     "oxlint": "^1.71.0",
     "prettier": "^3.9.1",
     "tsup": "^8.3.5",
-    "typescript": "^5.4.5"
+    "typescript": "^7.0.2"
   }
 }
