@@ -1,5 +1,10 @@
 import { cellKey, parseKey, rectContains, type Rect } from "./cellRef";
 import { mergeFormat, type CellFormat } from "./CellFormat";
+import {
+  transformCellPosition,
+  transformFormulaReferences,
+  type SheetStructureOperation,
+} from "./SheetStructure";
 import { parse, ParseError, type Node } from "./formula/parser";
 import {
   evaluate,
@@ -28,6 +33,13 @@ export interface PopulatedCell {
   format?: CellFormat;
 }
 
+/** Serializable, sparse document state used by structure history and codecs. */
+export interface SheetSnapshot {
+  rows: number;
+  cols: number;
+  cells: PopulatedCell[];
+}
+
 /**
  * Sparse spreadsheet model: a Map of only the non-empty cells, a reverse
  * dependency index for scalar refs, and a rect list for range refs (a range
@@ -35,8 +47,8 @@ export interface PopulatedCell {
  * expanded into 10k edges). Pure TS; no canvas imports; bun-test friendly.
  */
 export class SheetModel {
-  readonly rows: number;
-  readonly cols: number;
+  rows: number;
+  cols: number;
 
   private cells = new Map<string, Cell>();
   /** key → formula-cell keys that read it via a scalar ref. */
@@ -172,9 +184,78 @@ export class SheetModel {
     for (const [key, cell] of this.cells) {
       const { row, col } = parseKey(key);
       if (rectContains(range, row, col))
-        records.push({ row, col, raw: cell.raw, format: cell.format });
+        records.push({
+          row,
+          col,
+          raw: cell.raw,
+          format: cell.format ? { ...cell.format } : undefined,
+        });
     }
     return records.sort((a, b) => a.row - b.row || a.col - b.col);
+  }
+
+  /** Capture only sparse records, never the full logical rectangle. */
+  toSnapshot(): SheetSnapshot {
+    return {
+      rows: this.rows,
+      cols: this.cols,
+      cells: this.getCellsInRange({
+        r1: 0,
+        c1: 0,
+        r2: this.rows - 1,
+        c2: this.cols - 1,
+      }),
+    };
+  }
+
+  /** Replace document state atomically after a validated history operation. */
+  restoreSnapshot(snapshot: SheetSnapshot): void {
+    validateSnapshot(snapshot);
+    const rebuilt = new SheetModel(snapshot.rows, snapshot.cols);
+    for (const cell of snapshot.cells) {
+      rebuilt.setCell(cell.row, cell.col, cell.raw);
+      if (cell.format) rebuilt.setFormat(cell.row, cell.col, cell.format);
+    }
+    this.rows = snapshot.rows;
+    this.cols = snapshot.cols;
+    this.cells = rebuilt.cells;
+    this.scalarDependents = rebuilt.scalarDependents;
+    this.rangeDependents = rebuilt.rangeDependents;
+    this.emit();
+  }
+
+  /**
+   * Move sparse records and rewrite formula source for a row/column operation.
+   * The transformed state is rebuilt through normal parsing so dependency indexes
+   * and calculated values cannot retain coordinates from the previous shape.
+   */
+  applyStructure(operation: SheetStructureOperation): void {
+    validateStructure(operation, this.rows, this.cols);
+    const before = this.toSnapshot();
+    const nextRows =
+      operation.axis === "row"
+        ? before.rows +
+          (operation.kind === "insert" ? operation.count : -operation.count)
+        : before.rows;
+    const nextCols =
+      operation.axis === "column"
+        ? before.cols +
+          (operation.kind === "insert" ? operation.count : -operation.count)
+        : before.cols;
+    const cells: PopulatedCell[] = [];
+    for (const cell of before.cells) {
+      const position = transformCellPosition(cell, operation);
+      if (!position) continue;
+      cells.push({
+        row: position.row,
+        col: position.col,
+        raw: cell.raw.startsWith("=")
+          ? transformFormulaReferences(cell.raw, operation)
+          : cell.raw,
+        format: cell.format ? { ...cell.format } : undefined,
+      });
+    }
+    this.restoreSnapshot({ rows: nextRows, cols: nextCols, cells });
   }
 
   setCell(row: number, col: number, raw: string): void {
@@ -329,4 +410,49 @@ export class SheetModel {
       }
     }
   }
+}
+
+function validateSnapshot(snapshot: SheetSnapshot): void {
+  if (!Number.isInteger(snapshot.rows) || snapshot.rows < 1)
+    throw new RangeError("Sheet snapshot must retain at least one row");
+  if (!Number.isInteger(snapshot.cols) || snapshot.cols < 1)
+    throw new RangeError("Sheet snapshot must retain at least one column");
+  for (const cell of snapshot.cells) {
+    if (
+      !Number.isInteger(cell.row) ||
+      !Number.isInteger(cell.col) ||
+      cell.row < 0 ||
+      cell.col < 0 ||
+      cell.row >= snapshot.rows ||
+      cell.col >= snapshot.cols
+    )
+      throw new RangeError("Snapshot cell is outside sheet bounds");
+  }
+}
+
+function validateStructure(
+  operation: SheetStructureOperation,
+  rows: number,
+  cols: number,
+): void {
+  const size = operation.axis === "row" ? rows : cols;
+  if (
+    !Number.isInteger(operation.index) ||
+    !Number.isInteger(operation.count) ||
+    operation.count < 1
+  )
+    throw new RangeError(
+      "Structural index and count must be positive integers",
+    );
+  if (operation.kind === "insert") {
+    if (operation.index < 0 || operation.index > size)
+      throw new RangeError("Structural insert index is outside sheet bounds");
+    return;
+  }
+  if (operation.index < 0 || operation.index + operation.count > size)
+    throw new RangeError("Structural delete range is outside sheet bounds");
+  if (operation.count >= size)
+    throw new RangeError(
+      `A sheet must retain its last ${operation.axis === "row" ? "row" : "column"}`,
+    );
 }

@@ -3,6 +3,7 @@ import {
   transformFormulaReferences,
   type SheetStructureOperation,
 } from "../src/model/SheetStructure";
+import { SheetModel } from "../src/model/SheetModel";
 
 describe("structural formula source transforms", () => {
   it("moves scalar and range row references while preserving absolute markers", () => {
@@ -68,5 +69,90 @@ describe("structural formula source transforms", () => {
     expect(transformFormulaReferences("=SUM(A1:B2)", operation)).toBe(
       "=SUM(#REF!)",
     );
+  });
+});
+
+describe("SheetModel structural operations", () => {
+  it("inserts sparse rows, shifts formulas, and preserves format-only cells", () => {
+    const model = new SheetModel(5, 4);
+    model.setCell(0, 0, "10");
+    model.setCell(2, 0, "20");
+    model.setCell(3, 1, "=A3+A1");
+    model.setFormat(4, 3, { background: "#fef3c7" });
+
+    model.applyStructure({
+      kind: "insert",
+      axis: "row",
+      index: 1,
+      count: 2,
+    });
+
+    expect(model.rows).toBe(7);
+    expect(model.getRaw(0, 0)).toBe("10");
+    expect(model.getRaw(4, 0)).toBe("20");
+    expect(model.getRaw(5, 1)).toBe("=A5+A1");
+    expect(model.getValue(5, 1)).toBe(30);
+    expect(model.getFormat(6, 3).background).toBe("#fef3c7");
+    expect(model.cellCount).toBe(4);
+  });
+
+  it("deletes rows, contracts surviving formula ranges, and keeps the model sparse", () => {
+    const model = new SheetModel(6, 3);
+    model.setCell(0, 0, "1");
+    model.setCell(1, 0, "2");
+    model.setCell(2, 0, "3");
+    model.setCell(3, 0, "4");
+    model.setCell(4, 1, "=SUM(A1:A4)");
+    model.setCell(5, 2, "=A3");
+
+    model.applyStructure({
+      kind: "delete",
+      axis: "row",
+      index: 2,
+      count: 1,
+    });
+
+    expect(model.rows).toBe(5);
+    expect(model.getRaw(2, 0)).toBe("4");
+    expect(model.getRaw(3, 1)).toBe("=SUM(A1:A3)");
+    expect(model.getValue(3, 1)).toBe(7);
+    expect(model.getRaw(4, 2)).toBe("=#REF!");
+    expect(model.getDisplay(4, 2)).toBe("#REF!");
+    expect(model.cellCount).toBe(5);
+  });
+
+  it("inserts and deletes columns without allowing the final column to disappear", () => {
+    const model = new SheetModel(3, 3);
+    model.setCell(0, 0, "1");
+    model.setCell(0, 1, "2");
+    model.setCell(1, 2, "=A1+B1");
+
+    model.applyStructure({
+      kind: "insert",
+      axis: "column",
+      index: 1,
+      count: 1,
+    });
+    expect(model.cols).toBe(4);
+    expect(model.getRaw(0, 2)).toBe("2");
+    expect(model.getRaw(1, 3)).toBe("=A1+C1");
+
+    model.applyStructure({
+      kind: "delete",
+      axis: "column",
+      index: 1,
+      count: 1,
+    });
+    expect(model.cols).toBe(3);
+    expect(model.getRaw(0, 1)).toBe("2");
+    expect(model.getRaw(1, 2)).toBe("=A1+B1");
+    expect(() =>
+      model.applyStructure({
+        kind: "delete",
+        axis: "column",
+        index: 0,
+        count: 3,
+      }),
+    ).toThrow("last column");
   });
 });

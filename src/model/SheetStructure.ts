@@ -92,7 +92,7 @@ function transformScalar(
   reference: ParsedReference,
   operation: SheetStructureOperation,
 ): string {
-  const position = transformPosition(reference.position, operation);
+  const position = transformCellPosition(reference.position, operation);
   return position ? formatReference(position, reference) : "#REF!";
 }
 
@@ -113,7 +113,8 @@ function transformRange(
   )}`;
 }
 
-function transformPosition(
+/** Transform a stored sparse cell coordinate; null means deletion removed it. */
+export function transformCellPosition(
   position: CellPos,
   operation: SheetStructureOperation,
 ): CellPos | null {
@@ -142,8 +143,8 @@ function transformRangePositions(
   operation: SheetStructureOperation,
 ): { start: CellPos; end: CellPos } | null {
   if (operation.kind === "insert") {
-    const nextStart = transformPosition(start, operation);
-    const nextEnd = transformPosition(end, operation);
+    const nextStart = transformCellPosition(start, operation);
+    const nextEnd = transformCellPosition(end, operation);
     return nextStart && nextEnd ? { start: nextStart, end: nextEnd } : null;
   }
 
