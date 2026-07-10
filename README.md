@@ -14,6 +14,10 @@ operations rebuild the sparse document while preserving cell formats and rewrite
 A1-style formula references (including ranges and absolute markers) so every
 consumer shares one predictable spreadsheet contract.
 
+Sheet-level row and column metrics use sparse overrides: default-sized axes
+remain implicit, while resized axes survive snapshots, structural transforms,
+and transactional undo/redo for use by any rendering or automation adapter.
+
 ## Supported formulas
 
 The evaluator supports arithmetic, references, ranges, percent, exponentiation,

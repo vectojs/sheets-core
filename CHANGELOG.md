@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Sparse, serializable row and column axis metrics with default sizes and
+  validated overrides.
+- Undoable axis-size history and structural-operation remapping for resized
+  rows and columns.
+
 ## 0.2.0
 
 ### Added
