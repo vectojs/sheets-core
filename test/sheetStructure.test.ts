@@ -96,6 +96,37 @@ describe("SheetModel structural operations", () => {
     expect(model.cellCount).toBe(4);
   });
 
+  it("moves matching sparse axis-size overrides with row and column structure", () => {
+    const model = new SheetModel(5, 4);
+    model.rowMetrics.set(0, 30);
+    model.rowMetrics.set(2, 40);
+    model.columnMetrics.set(1, 160);
+    model.columnMetrics.set(3, 180);
+
+    model.applyStructure({
+      kind: "insert",
+      axis: "row",
+      index: 1,
+      count: 2,
+    });
+    expect(model.rowMetrics.entries()).toEqual([
+      { index: 0, size: 30 },
+      { index: 4, size: 40 },
+    ]);
+    expect(model.columnMetrics.entries()).toEqual([
+      { index: 1, size: 160 },
+      { index: 3, size: 180 },
+    ]);
+
+    model.applyStructure({
+      kind: "delete",
+      axis: "column",
+      index: 1,
+      count: 2,
+    });
+    expect(model.columnMetrics.entries()).toEqual([{ index: 1, size: 180 }]);
+  });
+
   it("deletes rows, contracts surviving formula ranges, and keeps the model sparse", () => {
     const model = new SheetModel(6, 3);
     model.setCell(0, 0, "1");

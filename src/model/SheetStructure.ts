@@ -126,6 +126,14 @@ export function transformCellPosition(
     : { row: position.row, col: transformed };
 }
 
+/** Transform one row/column metric index with the document operation contract. */
+export function transformAxisMetricIndex(
+  index: number,
+  operation: SheetStructureOperation,
+): number | null {
+  return transformScalarCoordinate(index, operation);
+}
+
 function transformScalarCoordinate(
   value: number,
   operation: SheetStructureOperation,

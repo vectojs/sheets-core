@@ -62,6 +62,8 @@ describe("SheetHistory", () => {
     model.setCell(0, 0, "1");
     model.setCell(2, 1, "=A1");
     model.setFormat(3, 2, { bold: true });
+    model.rowMetrics.set(2, 40);
+    model.columnMetrics.set(2, 160);
     const history = new SheetHistory(model);
     const before = model.toSnapshot();
 
@@ -74,6 +76,8 @@ describe("SheetHistory", () => {
     const after = model.toSnapshot();
     expect(after.rows).toBe(6);
     expect(model.getRaw(4, 1)).toBe("=A1");
+    expect(model.rowMetrics.entries()).toEqual([{ index: 4, size: 40 }]);
+    expect(model.columnMetrics.entries()).toEqual([{ index: 2, size: 160 }]);
 
     history.undo();
     expect(model.toSnapshot()).toEqual(before);

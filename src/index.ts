@@ -1,6 +1,7 @@
 export * from "./model/cellRef";
 export * from "./model/CellFormat";
 export * from "./model/SheetClipboard";
+export * from "./model/SheetAxisMetrics";
 export * from "./model/SheetHistory";
 export * from "./model/SheetModel";
 export * from "./model/SheetStructure";

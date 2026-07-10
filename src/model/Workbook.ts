@@ -1,4 +1,4 @@
-import { SheetModel, type PopulatedCell } from "./SheetModel";
+import { SheetModel, type SheetSnapshot } from "./SheetModel";
 
 export interface WorkbookSheet {
   id: string;
@@ -6,12 +6,9 @@ export interface WorkbookSheet {
   model: SheetModel;
 }
 
-export interface WorkbookSnapshotSheet {
+export interface WorkbookSnapshotSheet extends SheetSnapshot {
   id: string;
   name: string;
-  rows: number;
-  cols: number;
-  cells: PopulatedCell[];
 }
 
 export interface WorkbookSnapshot {
@@ -96,14 +93,7 @@ export class Workbook {
       sheets: this.entries.map((sheet) => ({
         id: sheet.id,
         name: sheet.name,
-        rows: sheet.model.rows,
-        cols: sheet.model.cols,
-        cells: sheet.model.getCellsInRange({
-          r1: 0,
-          c1: 0,
-          r2: sheet.model.rows - 1,
-          c2: sheet.model.cols - 1,
-        }),
+        ...sheet.model.toSnapshot(),
       })),
     };
   }
@@ -118,7 +108,7 @@ export class Workbook {
       cols: first.cols,
     });
     workbook.entries[0].id = first.id;
-    workbook.restoreCells(workbook.entries[0], first.cells);
+    workbook.entries[0].model.restoreSnapshot(first);
     for (const source of rest) {
       const entry = workbook.createEntry(source.name, {
         rows: source.rows,
@@ -126,18 +116,11 @@ export class Workbook {
       });
       entry.id = source.id;
       workbook.entries.push(entry);
-      workbook.restoreCells(entry, source.cells);
+      entry.model.restoreSnapshot(source);
     }
     workbook.nextId = 1;
     workbook.setActiveSheet(snapshot.activeSheetId);
     return workbook;
-  }
-
-  private restoreCells(sheet: WorkbookSheet, cells: PopulatedCell[]): void {
-    for (const cell of cells) {
-      sheet.model.setCell(cell.row, cell.col, cell.raw);
-      if (cell.format) sheet.model.setFormat(cell.row, cell.col, cell.format);
-    }
   }
 
   private createEntry(name: string, options: NewSheetOptions): WorkbookSheet {

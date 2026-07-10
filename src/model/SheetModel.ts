@@ -1,7 +1,14 @@
 import { cellKey, parseKey, rectContains, type Rect } from "./cellRef";
 import { mergeFormat, type CellFormat } from "./CellFormat";
 import {
+  DEFAULT_COLUMN_SIZE,
+  DEFAULT_ROW_SIZE,
+  SheetAxisMetrics,
+  type SheetAxisMetricsSnapshot,
+} from "./SheetAxisMetrics";
+import {
   transformCellPosition,
+  transformAxisMetricIndex,
   transformFormulaReferences,
   type SheetStructureOperation,
 } from "./SheetStructure";
@@ -38,6 +45,8 @@ export interface SheetSnapshot {
   rows: number;
   cols: number;
   cells: PopulatedCell[];
+  rowMetrics?: SheetAxisMetricsSnapshot;
+  columnMetrics?: SheetAxisMetricsSnapshot;
 }
 
 /**
@@ -49,6 +58,8 @@ export interface SheetSnapshot {
 export class SheetModel {
   rows: number;
   cols: number;
+  rowMetrics: SheetAxisMetrics;
+  columnMetrics: SheetAxisMetrics;
 
   private cells = new Map<string, Cell>();
   /** key → formula-cell keys that read it via a scalar ref. */
@@ -60,6 +71,8 @@ export class SheetModel {
   constructor(rows = 10_000, cols = 100) {
     this.rows = rows;
     this.cols = cols;
+    this.rowMetrics = new SheetAxisMetrics(rows, DEFAULT_ROW_SIZE);
+    this.columnMetrics = new SheetAxisMetrics(cols, DEFAULT_COLUMN_SIZE);
   }
 
   onChange(fn: () => void): () => void {
@@ -205,6 +218,8 @@ export class SheetModel {
         r2: this.rows - 1,
         c2: this.cols - 1,
       }),
+      rowMetrics: this.rowMetrics.toSnapshot(),
+      columnMetrics: this.columnMetrics.toSnapshot(),
     };
   }
 
@@ -212,12 +227,28 @@ export class SheetModel {
   restoreSnapshot(snapshot: SheetSnapshot): void {
     validateSnapshot(snapshot);
     const rebuilt = new SheetModel(snapshot.rows, snapshot.cols);
+    rebuilt.rowMetrics = SheetAxisMetrics.fromSnapshot(
+      snapshot.rows,
+      snapshot.rowMetrics ?? {
+        defaultSize: DEFAULT_ROW_SIZE,
+        overrides: [],
+      },
+    );
+    rebuilt.columnMetrics = SheetAxisMetrics.fromSnapshot(
+      snapshot.cols,
+      snapshot.columnMetrics ?? {
+        defaultSize: DEFAULT_COLUMN_SIZE,
+        overrides: [],
+      },
+    );
     for (const cell of snapshot.cells) {
       rebuilt.setCell(cell.row, cell.col, cell.raw);
       if (cell.format) rebuilt.setFormat(cell.row, cell.col, cell.format);
     }
     this.rows = snapshot.rows;
     this.cols = snapshot.cols;
+    this.rowMetrics = rebuilt.rowMetrics;
+    this.columnMetrics = rebuilt.columnMetrics;
     this.cells = rebuilt.cells;
     this.scalarDependents = rebuilt.scalarDependents;
     this.rangeDependents = rebuilt.rangeDependents;
@@ -255,7 +286,21 @@ export class SheetModel {
         format: cell.format ? { ...cell.format } : undefined,
       });
     }
-    this.restoreSnapshot({ rows: nextRows, cols: nextCols, cells });
+    const rowMetrics =
+      operation.axis === "row"
+        ? transformAxisMetrics(before.rowMetrics!, operation)
+        : before.rowMetrics;
+    const columnMetrics =
+      operation.axis === "column"
+        ? transformAxisMetrics(before.columnMetrics!, operation)
+        : before.columnMetrics;
+    this.restoreSnapshot({
+      rows: nextRows,
+      cols: nextCols,
+      cells,
+      rowMetrics,
+      columnMetrics,
+    });
   }
 
   setCell(row: number, col: number, raw: string): void {
@@ -410,6 +455,19 @@ export class SheetModel {
       }
     }
   }
+}
+
+function transformAxisMetrics(
+  snapshot: SheetAxisMetricsSnapshot,
+  operation: SheetStructureOperation,
+): SheetAxisMetricsSnapshot {
+  return {
+    defaultSize: snapshot.defaultSize,
+    overrides: snapshot.overrides.flatMap((entry) => {
+      const index = transformAxisMetricIndex(entry.index, operation);
+      return index === null ? [] : [{ index, size: entry.size }];
+    }),
+  };
 }
 
 function validateSnapshot(snapshot: SheetSnapshot): void {
