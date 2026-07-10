@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Undoable structural row and column insertion/deletion with sparse cell and
+  formatting preservation.
+- A1-style formula-reference rewriting for structural changes, including ranges,
+  absolute markers, and evaluable `#REF!` literals for removed references.
+
 ## 0.1.5
 
 ### Patch Changes

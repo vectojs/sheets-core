@@ -9,6 +9,11 @@ serialization, workbook snapshots, and transactional history. It intentionally h
 Canvas, DOM, browser, or MCP dependency, so a website, CLI, skill, or MCP tool
 can operate on the same document semantics.
 
+It also provides undoable structural row and column insertion/deletion. Structural
+operations rebuild the sparse document while preserving cell formats and rewrite
+A1-style formula references (including ranges and absolute markers) so every
+consumer shares one predictable spreadsheet contract.
+
 ## Supported formulas
 
 The evaluator supports arithmetic, references, ranges, percent, exponentiation,
@@ -31,8 +36,9 @@ const sheet = new SheetModel();
 const history = new SheetHistory(sheet);
 history.apply([{ row: 0, col: 0, raw: "2" }]);
 history.apply([{ row: 0, col: 1, raw: "=A1*3" }]);
+history.applyStructure({ kind: "insert", axis: "row", index: 0, count: 1 });
 
-sheet.getDisplay(0, 1); // "6"
+sheet.getDisplay(1, 1); // "6", because the formula moved with its row
 ```
 
 ## Verify
