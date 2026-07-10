@@ -1,0 +1,24 @@
+name: Feature request
+description: Propose a spreadsheet document capability.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and user intent
+      description: Explain the spreadsheet operation or compatibility gap.
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Proposed core contract
+      description: Describe the pure TypeScript API and serializable behavior without UI, browser, CLI, or MCP assumptions.
+    validations:
+      required: true
+  - type: textarea
+    id: cases
+    attributes:
+      label: Required cases
+      description: List edge cases, error values, history behavior, and snapshot/codec expectations.

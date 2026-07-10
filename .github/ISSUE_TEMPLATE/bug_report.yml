@@ -1,0 +1,32 @@
+name: Bug report
+description: Report a reproducible spreadsheet-core defect.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem
+      description: Describe the incorrect document, formula, history, formatting, or codec behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide TypeScript calls, raw cells, expected values, and actual values.
+      render: ts
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: "@vectojs/sheets-core@0.1.5"
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Snapshot or compatibility impact
+      description: Note whether versioned JSON, CSV, formulas, or undo/redo data are affected.
