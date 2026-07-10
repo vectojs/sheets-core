@@ -1,4 +1,5 @@
 import { cellKey, parseKey, rectContains, type Rect } from "./cellRef";
+import { mergeFormat, type CellFormat } from "./CellFormat";
 import { parse, ParseError, type Node } from "./formula/parser";
 import {
   evaluate,
@@ -12,6 +13,7 @@ import {
 
 interface Cell {
   raw: string;
+  format?: CellFormat;
   value: Value;
   ast: Node | null;
   /** Cells and ranges this formula reads (forward deps). */
@@ -23,6 +25,7 @@ export interface PopulatedCell {
   row: number;
   col: number;
   raw: string;
+  format?: CellFormat;
 }
 
 /**
@@ -73,12 +76,65 @@ export class SheetModel {
     if (isErr(v)) return v.error;
     if (typeof v === "boolean") return v ? "TRUE" : "FALSE";
     if (typeof v === "number") {
+      const numberFormat = this.getFormat(row, col).numberFormat;
+      if (numberFormat === "percent") return `${Math.round(v * 10000) / 100}%`;
+      if (numberFormat === "currency") return `$${Math.round(v * 100) / 100}`;
       // Trim float noise without switching to exponential for common cases.
       return Number.isInteger(v)
         ? String(v)
         : String(Math.round(v * 1e10) / 1e10);
     }
     return v;
+  }
+
+  getFormat(row: number, col: number): Readonly<CellFormat> {
+    return this.cells.get(cellKey(row, col))?.format ?? {};
+  }
+
+  hasFormat(row: number, col: number): boolean {
+    return this.cells.get(cellKey(row, col))?.format !== undefined;
+  }
+
+  setFormat(row: number, col: number, patch: CellFormat): void {
+    const key = cellKey(row, col);
+    const cell = this.cells.get(key);
+    if (!cell) {
+      this.cells.set(key, {
+        raw: "",
+        value: null,
+        ast: null,
+        reads: null,
+        format: mergeFormat({}, patch),
+      });
+    } else {
+      cell.format = mergeFormat(cell.format ?? {}, patch);
+    }
+    this.emit();
+  }
+
+  /** Replace the complete stored format; used by transactional undo/redo. */
+  replaceFormat(
+    row: number,
+    col: number,
+    format: CellFormat | undefined,
+  ): void {
+    const key = cellKey(row, col);
+    const cell = this.cells.get(key);
+    if (!cell && !format) return;
+    if (!cell) {
+      this.cells.set(key, {
+        raw: "",
+        value: null,
+        ast: null,
+        reads: null,
+        format: { ...format },
+      });
+    } else if (!format && cell.raw === "") {
+      this.cells.delete(key);
+    } else {
+      cell.format = format ? { ...format } : undefined;
+    }
+    this.emit();
   }
 
   /** Number of non-empty cells (for HUD/debug). */
@@ -116,7 +172,7 @@ export class SheetModel {
     for (const [key, cell] of this.cells) {
       const { row, col } = parseKey(key);
       if (rectContains(range, row, col))
-        records.push({ row, col, raw: cell.raw });
+        records.push({ row, col, raw: cell.raw, format: cell.format });
     }
     return records.sort((a, b) => a.row - b.row || a.col - b.col);
   }
@@ -132,7 +188,15 @@ export class SheetModel {
     this.unwireReads(key);
 
     if (trimmed === "") {
-      this.cells.delete(key);
+      if (this.cells.get(key)?.format) {
+        this.cells.set(key, {
+          raw: "",
+          value: null,
+          ast: null,
+          reads: null,
+          format: this.cells.get(key)?.format,
+        });
+      } else this.cells.delete(key);
     } else if (trimmed.startsWith("=")) {
       let ast: Node | null = null;
       let parseFailed = false;
@@ -142,7 +206,13 @@ export class SheetModel {
         if (!(e instanceof ParseError)) throw e;
         parseFailed = true;
       }
-      const cell: Cell = { raw: trimmed, value: null, ast, reads: null };
+      const cell: Cell = {
+        raw: trimmed,
+        value: null,
+        ast,
+        reads: null,
+        format: this.cells.get(key)?.format,
+      };
       if (parseFailed) {
         cell.value = err("#ERROR!");
       } else if (ast) {
@@ -162,7 +232,13 @@ export class SheetModel {
     } else {
       const n = Number(trimmed);
       const value: Value = trimmed !== "" && !Number.isNaN(n) ? n : raw;
-      this.cells.set(key, { raw, value, ast: null, reads: null });
+      this.cells.set(key, {
+        raw,
+        value,
+        ast: null,
+        reads: null,
+        format: this.cells.get(key)?.format,
+      });
     }
 
     dirty.add(key);

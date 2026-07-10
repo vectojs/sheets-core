@@ -1,4 +1,5 @@
 import { SheetModel } from "./SheetModel";
+import { mergeFormat, type CellFormat } from "./CellFormat";
 
 export interface CellWrite {
   row: number;
@@ -10,14 +11,29 @@ interface CellChange extends CellWrite {
   before: string;
 }
 
+export interface CellFormatWrite {
+  row: number;
+  col: number;
+  format: CellFormat;
+}
+
+interface FormatChange extends CellFormatWrite {
+  before: CellFormat | undefined;
+  after: CellFormat;
+}
+
+type HistoryEntry =
+  | { kind: "cells"; changes: CellChange[] }
+  | { kind: "formats"; changes: FormatChange[] };
+
 /**
  * Transactional undo/redo for document operations. The UI, clipboard and a
  * future MCP surface all submit the same `CellWrite[]` shape, never Canvas
  * state, so history remains deterministic and independently testable.
  */
 export class SheetHistory {
-  private undoStack: CellChange[][] = [];
-  private redoStack: CellChange[][] = [];
+  private undoStack: HistoryEntry[] = [];
+  private redoStack: HistoryEntry[] = [];
 
   constructor(private readonly model: SheetModel) {}
 
@@ -39,23 +55,53 @@ export class SheetHistory {
     if (changes.length === 0) return;
     for (const change of changes)
       this.model.setCell(change.row, change.col, change.raw);
-    this.undoStack.push(changes);
+    this.undoStack.push({ kind: "cells", changes });
+    this.redoStack = [];
+  }
+
+  applyFormats(writes: CellFormatWrite[]): void {
+    const changes = writes
+      .map((write) => {
+        const before = this.model.hasFormat(write.row, write.col)
+          ? { ...this.model.getFormat(write.row, write.col) }
+          : undefined;
+        const after = mergeFormat(before ?? {}, write.format);
+        return { ...write, before, after };
+      })
+      .filter(
+        (change) =>
+          JSON.stringify(change.before ?? {}) !== JSON.stringify(change.after),
+      );
+    if (changes.length === 0) return;
+    for (const change of changes)
+      this.model.replaceFormat(change.row, change.col, change.after);
+    this.undoStack.push({ kind: "formats", changes });
     this.redoStack = [];
   }
 
   undo(): void {
     const changes = this.undoStack.pop();
     if (!changes) return;
-    for (const change of [...changes].reverse())
-      this.model.setCell(change.row, change.col, change.before);
+    if (changes.kind === "cells") {
+      for (const change of [...changes.changes].reverse())
+        this.model.setCell(change.row, change.col, change.before);
+    } else {
+      for (const change of [...changes.changes].reverse())
+        this.model.replaceFormat(change.row, change.col, change.before);
+    }
     this.redoStack.push(changes);
   }
 
   redo(): void {
     const changes = this.redoStack.pop();
     if (!changes) return;
-    for (const change of changes)
-      this.model.setCell(change.row, change.col, change.raw);
+    if (changes.kind === "cells") {
+      for (const change of changes.changes)
+        this.model.setCell(change.row, change.col, change.raw);
+    } else {
+      for (const change of changes.changes)
+        this.model.replaceFormat(change.row, change.col, change.after);
+    }
     this.undoStack.push(changes);
   }
 }

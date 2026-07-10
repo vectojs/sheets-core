@@ -134,7 +134,10 @@ export class Workbook {
   }
 
   private restoreCells(sheet: WorkbookSheet, cells: PopulatedCell[]): void {
-    for (const cell of cells) sheet.model.setCell(cell.row, cell.col, cell.raw);
+    for (const cell of cells) {
+      sheet.model.setCell(cell.row, cell.col, cell.raw);
+      if (cell.format) sheet.model.setFormat(cell.row, cell.col, cell.format);
+    }
   }
 
   private createEntry(name: string, options: NewSheetOptions): WorkbookSheet {

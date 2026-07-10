@@ -37,4 +37,23 @@ describe("SheetHistory", () => {
     expect(history.canRedo).toBe(false);
     expect(model.getRaw(0, 0)).toBe("two");
   });
+
+  it("undoes and redoes a grouped format transaction", () => {
+    const model = new SheetModel();
+    const history = new SheetHistory(model);
+    history.applyFormats([
+      { row: 0, col: 0, format: { bold: true, numberFormat: "currency" } },
+      { row: 0, col: 1, format: { background: "#fef3c7" } },
+    ]);
+
+    expect(model.getFormat(0, 0)).toEqual({
+      bold: true,
+      numberFormat: "currency",
+    });
+    history.undo();
+    expect(model.hasFormat(0, 0)).toBe(false);
+    expect(model.hasFormat(0, 1)).toBe(false);
+    history.redo();
+    expect(model.getFormat(0, 1).background).toBe("#fef3c7");
+  });
 });

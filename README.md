@@ -4,8 +4,8 @@
 
 [![MIT license](https://img.shields.io/badge/license-MIT-6366f1.svg)](./LICENSE)
 
-`@vectojs/sheets-core` owns spreadsheet state, formula evaluation, clipboard
-serialization, and transactional history. It intentionally has no VectoJS,
+`@vectojs/sheets-core` owns spreadsheet state, cell formatting, formula evaluation, clipboard
+serialization, workbook snapshots, and transactional history. It intentionally has no VectoJS,
 Canvas, DOM, browser, or MCP dependency, so a website, CLI, skill, or MCP tool
 can operate on the same document semantics.
 

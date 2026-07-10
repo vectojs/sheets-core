@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.3
+
+### Added
+
+- Sparse cell formatting for colors, text emphasis, alignment, and numeric
+  presentation, including format-only cells and versioned workbook snapshots.
+- Transactional formatting history with undo and redo.
+
 ## 0.1.2
 
 ### Added

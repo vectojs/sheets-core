@@ -22,6 +22,7 @@ describe("Workbook", () => {
     const workbook = new Workbook({ name: "Plan", rows: 20, cols: 10 });
     const budget = workbook.addSheet("Budget", { rows: 30, cols: 12 });
     workbook.activeSheet.model.setCell(0, 0, "=2+3");
+    workbook.activeSheet.model.setFormat(0, 0, { numberFormat: "currency" });
     workbook.setActiveSheet(budget.id);
     workbook.activeSheet.model.setCell(2, 4, "42");
 
@@ -32,7 +33,10 @@ describe("Workbook", () => {
       "Plan",
       "Budget",
     ]);
-    expect(restored.sheets[0].model.getDisplay(0, 0)).toBe("5");
+    expect(restored.sheets[0].model.getDisplay(0, 0)).toBe("$5");
+    expect(restored.sheets[0].model.getFormat(0, 0).numberFormat).toBe(
+      "currency",
+    );
     expect(restored.activeSheet.model.getRaw(2, 4)).toBe("42");
   });
 

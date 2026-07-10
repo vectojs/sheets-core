@@ -38,6 +38,22 @@ describe("SheetModel basics", () => {
     expect(m.getUsedRange()).toBeNull();
   });
 
+  it("keeps cell formatting with values and format-only cells", () => {
+    const m = new SheetModel(20, 10);
+    m.setCell(0, 0, "0.125");
+    m.setFormat(0, 0, { bold: true, numberFormat: "percent" });
+    m.setFormat(4, 3, { background: "#fef3c7" });
+
+    expect(m.getDisplay(0, 0)).toBe("12.5%");
+    expect(m.getFormat(0, 0)).toEqual({
+      bold: true,
+      numberFormat: "percent",
+    });
+    expect(m.getUsedRange()).toEqual({ r1: 0, c1: 0, r2: 4, c2: 3 });
+    m.setCell(0, 0, "");
+    expect(m.getFormat(0, 0).bold).toBe(true);
+  });
+
   it("evaluates formulas and keeps raw text", () => {
     const m = new SheetModel();
     m.setCell(0, 0, "2");
