@@ -46,4 +46,21 @@ describe("Workbook", () => {
       "last sheet",
     );
   });
+
+  it("persists structural dimensions and rewritten formulas through snapshots", () => {
+    const workbook = new Workbook({ name: "Plan", rows: 4, cols: 3 });
+    workbook.activeSheet.model.setCell(0, 0, "1");
+    workbook.activeSheet.model.setCell(2, 1, "=A3");
+    workbook.activeSheet.model.applyStructure({
+      kind: "insert",
+      axis: "row",
+      index: 1,
+      count: 2,
+    });
+
+    const restored = Workbook.fromSnapshot(workbook.toSnapshot());
+    expect(restored.activeSheet.model.rows).toBe(6);
+    expect(restored.activeSheet.model.getRaw(4, 1)).toBe("=A5");
+    expect(restored.activeSheet.model.getValue(4, 1)).toBeNull();
+  });
 });

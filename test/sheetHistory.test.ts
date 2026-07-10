@@ -56,4 +56,28 @@ describe("SheetHistory", () => {
     history.redo();
     expect(model.getFormat(0, 1).background).toBe("#fef3c7");
   });
+
+  it("undoes and redoes a structural operation as one sparse snapshot transaction", () => {
+    const model = new SheetModel(4, 3);
+    model.setCell(0, 0, "1");
+    model.setCell(2, 1, "=A1");
+    model.setFormat(3, 2, { bold: true });
+    const history = new SheetHistory(model);
+    const before = model.toSnapshot();
+
+    history.applyStructure({
+      kind: "insert",
+      axis: "row",
+      index: 1,
+      count: 2,
+    });
+    const after = model.toSnapshot();
+    expect(after.rows).toBe(6);
+    expect(model.getRaw(4, 1)).toBe("=A1");
+
+    history.undo();
+    expect(model.toSnapshot()).toEqual(before);
+    history.redo();
+    expect(model.toSnapshot()).toEqual(after);
+  });
 });

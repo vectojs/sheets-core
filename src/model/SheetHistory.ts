@@ -1,5 +1,6 @@
-import { SheetModel } from "./SheetModel";
+import { SheetModel, type SheetSnapshot } from "./SheetModel";
 import { mergeFormat, type CellFormat } from "./CellFormat";
+import type { SheetStructureOperation } from "./SheetStructure";
 
 export interface CellWrite {
   row: number;
@@ -24,7 +25,8 @@ interface FormatChange extends CellFormatWrite {
 
 type HistoryEntry =
   | { kind: "cells"; changes: CellChange[] }
-  | { kind: "formats"; changes: FormatChange[] };
+  | { kind: "formats"; changes: FormatChange[] }
+  | { kind: "structure"; before: SheetSnapshot; after: SheetSnapshot };
 
 /**
  * Transactional undo/redo for document operations. The UI, clipboard and a
@@ -79,15 +81,26 @@ export class SheetHistory {
     this.redoStack = [];
   }
 
+  /** Apply one structural document operation as a single undoable transaction. */
+  applyStructure(operation: SheetStructureOperation): void {
+    const before = this.model.toSnapshot();
+    this.model.applyStructure(operation);
+    const after = this.model.toSnapshot();
+    this.undoStack.push({ kind: "structure", before, after });
+    this.redoStack = [];
+  }
+
   undo(): void {
     const changes = this.undoStack.pop();
     if (!changes) return;
     if (changes.kind === "cells") {
       for (const change of [...changes.changes].reverse())
         this.model.setCell(change.row, change.col, change.before);
-    } else {
+    } else if (changes.kind === "formats") {
       for (const change of [...changes.changes].reverse())
         this.model.replaceFormat(change.row, change.col, change.before);
+    } else {
+      this.model.restoreSnapshot(changes.before);
     }
     this.redoStack.push(changes);
   }
@@ -98,9 +111,11 @@ export class SheetHistory {
     if (changes.kind === "cells") {
       for (const change of changes.changes)
         this.model.setCell(change.row, change.col, change.raw);
-    } else {
+    } else if (changes.kind === "formats") {
       for (const change of changes.changes)
         this.model.replaceFormat(change.row, change.col, change.after);
+    } else {
+      this.model.restoreSnapshot(changes.after);
     }
     this.undoStack.push(changes);
   }

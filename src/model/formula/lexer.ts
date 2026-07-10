@@ -1,13 +1,7 @@
 /** Formula tokenizer. Input is the text AFTER the leading `=`. */
 
 export type TokenType =
-  | "num"
-  | "str"
-  | "ref"
-  | "error"
-  | "ident"
-  | "op"
-  | "eof";
+  "num" | "str" | "ref" | "error" | "ident" | "op" | "eof";
 
 export interface Token {
   type: TokenType;
