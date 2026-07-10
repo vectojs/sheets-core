@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+### Patch Changes
+
+- Add versioned workbook JSON and RFC 4180-style CSV document exchange helpers.
+
 All notable changes to this project are documented in this file.
 
 ## 0.1.3
