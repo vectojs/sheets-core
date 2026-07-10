@@ -3,6 +3,8 @@ export interface SheetAxisMetricEntry {
   size: number;
 }
 
+export type SheetAxis = "row" | "column";
+
 export interface SheetAxisMetricsSnapshot {
   defaultSize: number;
   overrides: SheetAxisMetricEntry[];

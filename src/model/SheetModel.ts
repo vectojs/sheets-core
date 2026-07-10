@@ -4,6 +4,7 @@ import {
   DEFAULT_COLUMN_SIZE,
   DEFAULT_ROW_SIZE,
   SheetAxisMetrics,
+  type SheetAxis,
   type SheetAxisMetricsSnapshot,
 } from "./SheetAxisMetrics";
 import {
@@ -118,6 +119,19 @@ export class SheetModel {
 
   hasFormat(row: number, col: number): boolean {
     return this.cells.get(cellKey(row, col))?.format !== undefined;
+  }
+
+  getAxisSize(axis: SheetAxis, index: number): number {
+    return axis === "row"
+      ? this.rowMetrics.get(index)
+      : this.columnMetrics.get(index);
+  }
+
+  /** Set a logical row/column size without giving the document a rendering dependency. */
+  setAxisSize(axis: SheetAxis, index: number, size: number): void {
+    if (axis === "row") this.rowMetrics.set(index, size);
+    else this.columnMetrics.set(index, size);
+    this.emit();
   }
 
   setFormat(row: number, col: number, patch: CellFormat): void {

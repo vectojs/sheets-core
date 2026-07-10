@@ -57,6 +57,26 @@ describe("SheetHistory", () => {
     expect(model.getFormat(0, 1).background).toBe("#fef3c7");
   });
 
+  it("undoes and redoes grouped row and column size changes", () => {
+    const model = new SheetModel(4, 3);
+    const history = new SheetHistory(model);
+
+    history.applyAxisSizes([
+      { axis: "row", index: 2, size: 40 },
+      { axis: "column", index: 1, size: 160 },
+    ]);
+    expect(model.getAxisSize("row", 2)).toBe(40);
+    expect(model.getAxisSize("column", 1)).toBe(160);
+
+    history.undo();
+    expect(model.getAxisSize("row", 2)).toBe(24);
+    expect(model.getAxisSize("column", 1)).toBe(112);
+
+    history.redo();
+    expect(model.getAxisSize("row", 2)).toBe(40);
+    expect(model.getAxisSize("column", 1)).toBe(160);
+  });
+
   it("undoes and redoes a structural operation as one sparse snapshot transaction", () => {
     const model = new SheetModel(4, 3);
     model.setCell(0, 0, "1");

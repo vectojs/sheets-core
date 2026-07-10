@@ -1,5 +1,6 @@
 import { SheetModel, type SheetSnapshot } from "./SheetModel";
 import { mergeFormat, type CellFormat } from "./CellFormat";
+import type { SheetAxis } from "./SheetAxisMetrics";
 import type { SheetStructureOperation } from "./SheetStructure";
 
 export interface CellWrite {
@@ -18,6 +19,16 @@ export interface CellFormatWrite {
   format: CellFormat;
 }
 
+export interface AxisSizeWrite {
+  axis: SheetAxis;
+  index: number;
+  size: number;
+}
+
+interface AxisSizeChange extends AxisSizeWrite {
+  before: number;
+}
+
 interface FormatChange extends CellFormatWrite {
   before: CellFormat | undefined;
   after: CellFormat;
@@ -26,6 +37,7 @@ interface FormatChange extends CellFormatWrite {
 type HistoryEntry =
   | { kind: "cells"; changes: CellChange[] }
   | { kind: "formats"; changes: FormatChange[] }
+  | { kind: "axis-sizes"; changes: AxisSizeChange[] }
   | { kind: "structure"; before: SheetSnapshot; after: SheetSnapshot };
 
 /**
@@ -81,6 +93,20 @@ export class SheetHistory {
     this.redoStack = [];
   }
 
+  applyAxisSizes(writes: AxisSizeWrite[]): void {
+    const changes = writes
+      .map((write) => ({
+        ...write,
+        before: this.model.getAxisSize(write.axis, write.index),
+      }))
+      .filter((change) => change.before !== change.size);
+    if (changes.length === 0) return;
+    for (const change of changes)
+      this.model.setAxisSize(change.axis, change.index, change.size);
+    this.undoStack.push({ kind: "axis-sizes", changes });
+    this.redoStack = [];
+  }
+
   /** Apply one structural document operation as a single undoable transaction. */
   applyStructure(operation: SheetStructureOperation): void {
     const before = this.model.toSnapshot();
@@ -99,6 +125,9 @@ export class SheetHistory {
     } else if (changes.kind === "formats") {
       for (const change of [...changes.changes].reverse())
         this.model.replaceFormat(change.row, change.col, change.before);
+    } else if (changes.kind === "axis-sizes") {
+      for (const change of [...changes.changes].reverse())
+        this.model.setAxisSize(change.axis, change.index, change.before);
     } else {
       this.model.restoreSnapshot(changes.before);
     }
@@ -114,6 +143,9 @@ export class SheetHistory {
     } else if (changes.kind === "formats") {
       for (const change of changes.changes)
         this.model.replaceFormat(change.row, change.col, change.after);
+    } else if (changes.kind === "axis-sizes") {
+      for (const change of changes.changes)
+        this.model.setAxisSize(change.axis, change.index, change.size);
     } else {
       this.model.restoreSnapshot(changes.after);
     }
