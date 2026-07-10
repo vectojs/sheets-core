@@ -1,6 +1,6 @@
 {
   "name": "@vectojs/sheets-core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Pure spreadsheet document, formula, clipboard, and history primitives for the VectoJS Sheets family.",
   "license": "MIT",
   "publishConfig": {
