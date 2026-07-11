@@ -19,11 +19,17 @@ remain implicit, while resized axes survive snapshots, structural transforms,
 and transactional undo/redo for use by any rendering or automation adapter.
 
 Range transfer is also a Core document operation. `captureRange()` records a
-dense value/format payload, `transferRange()` tiles it while translating
+logically dense but sparsely stored value/format payload, `transferRange()` tiles it while translating
 relative A1 references, and `SheetHistory.applyCellStates()` commits exact raw
 values and formats as one undoable transaction. Canvas fill handles, internal
 clipboard actions, CLI, and MCP consumers can therefore share one spreadsheet
 contract without importing rendering or browser state.
+
+`sortRange()` produces sparse exact-state writes for a complete selected row
+range, orders by computed values with stable ties and blanks last, moves exact
+formats, and translates formulas by their source-to-destination row delta. The
+result can be committed through `SheetHistory.applyCellStates()` as one undoable
+operation by Website, CLI, or MCP adapters.
 
 ## Supported formulas
 

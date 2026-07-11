@@ -5,6 +5,7 @@ export * from "./model/SheetAxisMetrics";
 export * from "./model/SheetHistory";
 export * from "./model/SheetModel";
 export * from "./model/SheetRangeTransfer";
+export * from "./model/SheetRangeSort";
 export * from "./model/SheetStructure";
 export * from "./model/Workbook";
 export * from "./model/WorkbookCodec";

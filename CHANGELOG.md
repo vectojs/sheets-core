@@ -11,6 +11,9 @@
 
 ### Added
 
+- Stable, sparse range-row sorting by computed values with blanks last,
+  formula-reference translation, exact format movement, and compound history
+  compatibility.
 - Formula-aware dense range capture/tiling with relative, mixed, and absolute
   A1 reference translation for fill and internal clipboard workflows.
 - Exact raw-value and format range transactions that undo and redo as one step.
