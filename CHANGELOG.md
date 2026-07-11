@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+### Minor Changes
+
+- 67e756c: Add stable sparse range-row sorting by computed values, with blanks last,
+  formula-aware movement, exact formats, and one-step history compatibility.
+
 ## 0.4.0
 
 ### Minor Changes

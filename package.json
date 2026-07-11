@@ -1,6 +1,6 @@
 {
   "name": "@vectojs/numera-core",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Pure spreadsheet document, formula, clipboard, and history primitives for the Numera family.",
   "license": "MIT",
   "publishConfig": {
