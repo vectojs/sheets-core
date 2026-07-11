@@ -3,6 +3,35 @@ import { SheetHistory } from "../src/model/SheetHistory";
 import { SheetModel } from "../src/model/SheetModel";
 
 describe("SheetHistory", () => {
+  it("normalizes duplicate exact-state writes with last-write-wins semantics", () => {
+    const model = new SheetModel();
+    model.setCell(0, 0, "before");
+    const history = new SheetHistory(model);
+
+    history.applyCellStates([
+      { row: 0, col: 0, raw: "after" },
+      { row: 0, col: 0, raw: "before" },
+    ]);
+
+    expect(model.getRaw(0, 0)).toBe("before");
+    expect(history.canUndo).toBe(false);
+  });
+
+  it("distinguishes an absent format from a stored empty format", () => {
+    const model = new SheetModel();
+    model.setFormat(0, 0, {});
+    const history = new SheetHistory(model);
+
+    history.applyCellStates([{ row: 0, col: 0, raw: "" }]);
+    expect(model.hasFormat(0, 0)).toBe(false);
+
+    history.undo();
+    expect(model.hasFormat(0, 0)).toBe(true);
+    expect(model.getFormat(0, 0)).toEqual({});
+    history.redo();
+    expect(model.hasFormat(0, 0)).toBe(false);
+  });
+
   it("undoes and redoes a grouped cell edit transaction", () => {
     const model = new SheetModel();
     model.setCell(0, 0, "before");

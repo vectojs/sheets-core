@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+  translateFormulaReferences,
   transformFormulaReferences,
   type SheetStructureOperation,
 } from "../src/model/SheetStructure";
@@ -69,6 +70,50 @@ describe("structural formula source transforms", () => {
     expect(transformFormulaReferences("=SUM(A1:B2)", operation)).toBe(
       "=SUM(#REF!)",
     );
+  });
+});
+
+describe("fill formula source translation", () => {
+  it("moves only relative dimensions in scalar and range references", () => {
+    expect(
+      translateFormulaReferences('=A1+$B1+C$2+$D$4+SUM(A1:B2)&"A1"', 1, 2, {
+        rows: 20,
+        cols: 20,
+      }),
+    ).toBe('=C2+$B2+E$2+$D$4+SUM(C2:D3)&"A1"');
+  });
+
+  it("supports reverse movement and marks out-of-bounds references", () => {
+    expect(
+      translateFormulaReferences("=B2+A1+SUM(B2:C3)", -1, -1, {
+        rows: 5,
+        cols: 5,
+      }),
+    ).toBe("=A1+#REF!+SUM(A1:B2)");
+  });
+
+  it("preserves the valid endpoint of a partially invalid range", () => {
+    expect(
+      translateFormulaReferences("=SUM(A1:B2)", 0, -1, {
+        rows: 5,
+        cols: 5,
+      }),
+    ).toBe("=SUM(#REF!:A2)");
+    expect(
+      translateFormulaReferences("=SUM(D4:E5)", 0, 1, {
+        rows: 5,
+        cols: 5,
+      }),
+    ).toBe("=SUM(E4:#REF!)");
+  });
+
+  it("does not reinterpret function names or A1-looking string text", () => {
+    expect(
+      translateFormulaReferences('=LOG10(A1)&"B2"', 1, 1, {
+        rows: 5,
+        cols: 5,
+      }),
+    ).toBe('=LOG10(B2)&"B2"');
   });
 });
 

@@ -19,6 +19,16 @@ export interface CellFormatWrite {
   format: CellFormat;
 }
 
+export interface CellStateWrite extends CellWrite {
+  format?: CellFormat;
+}
+
+interface CellStateChange extends CellStateWrite {
+  beforeRaw: string;
+  beforeFormat?: CellFormat;
+  afterFormat?: CellFormat;
+}
+
 export interface AxisSizeWrite {
   axis: SheetAxis;
   index: number;
@@ -36,6 +46,7 @@ interface FormatChange extends CellFormatWrite {
 
 type HistoryEntry =
   | { kind: "cells"; changes: CellChange[] }
+  | { kind: "cell-states"; changes: CellStateChange[] }
   | { kind: "formats"; changes: FormatChange[] }
   | { kind: "axis-sizes"; changes: AxisSizeChange[] }
   | { kind: "structure"; before: SheetSnapshot; after: SheetSnapshot };
@@ -70,6 +81,39 @@ export class SheetHistory {
     for (const change of changes)
       this.model.setCell(change.row, change.col, change.raw);
     this.undoStack.push({ kind: "cells", changes });
+    this.redoStack = [];
+  }
+
+  /** Apply exact raw values and formats as one range-transfer transaction. */
+  applyCellStates(writes: CellStateWrite[]): void {
+    const finalWrites = new Map<string, CellStateWrite>();
+    for (const write of writes)
+      finalWrites.set(`${write.row}:${write.col}`, write);
+    const changes = [...finalWrites.values()]
+      .map((write) => {
+        const beforeFormat = this.model.hasFormat(write.row, write.col)
+          ? { ...this.model.getFormat(write.row, write.col) }
+          : undefined;
+        const afterFormat = write.format ? { ...write.format } : undefined;
+        return {
+          ...write,
+          format: afterFormat,
+          beforeRaw: this.model.getRaw(write.row, write.col),
+          beforeFormat,
+          afterFormat,
+        };
+      })
+      .filter(
+        (change) =>
+          change.beforeRaw !== change.raw ||
+          !formatsEqual(change.beforeFormat, change.afterFormat),
+      );
+    if (changes.length === 0) return;
+    for (const change of changes) {
+      this.model.setCell(change.row, change.col, change.raw);
+      this.model.replaceFormat(change.row, change.col, change.afterFormat);
+    }
+    this.undoStack.push({ kind: "cell-states", changes });
     this.redoStack = [];
   }
 
@@ -122,6 +166,11 @@ export class SheetHistory {
     if (changes.kind === "cells") {
       for (const change of [...changes.changes].reverse())
         this.model.setCell(change.row, change.col, change.before);
+    } else if (changes.kind === "cell-states") {
+      for (const change of [...changes.changes].reverse()) {
+        this.model.setCell(change.row, change.col, change.beforeRaw);
+        this.model.replaceFormat(change.row, change.col, change.beforeFormat);
+      }
     } else if (changes.kind === "formats") {
       for (const change of [...changes.changes].reverse())
         this.model.replaceFormat(change.row, change.col, change.before);
@@ -140,6 +189,11 @@ export class SheetHistory {
     if (changes.kind === "cells") {
       for (const change of changes.changes)
         this.model.setCell(change.row, change.col, change.raw);
+    } else if (changes.kind === "cell-states") {
+      for (const change of changes.changes) {
+        this.model.setCell(change.row, change.col, change.raw);
+        this.model.replaceFormat(change.row, change.col, change.afterFormat);
+      }
     } else if (changes.kind === "formats") {
       for (const change of changes.changes)
         this.model.replaceFormat(change.row, change.col, change.after);
@@ -151,4 +205,16 @@ export class SheetHistory {
     }
     this.undoStack.push(changes);
   }
+}
+
+function formatsEqual(
+  left: CellFormat | undefined,
+  right: CellFormat | undefined,
+): boolean {
+  if (left === undefined || right === undefined) return left === right;
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)] as Array<
+    keyof CellFormat
+  >);
+  for (const key of keys) if (left[key] !== right[key]) return false;
+  return true;
 }

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Formula-aware dense range capture/tiling with relative, mixed, and absolute
+  A1 reference translation for fill and internal clipboard workflows.
+- Exact raw-value and format range transactions that undo and redo as one step.
+
+### Fixed
+
+- Keep function identifiers such as `LOG10` out of formula reference rewrites.
+
 ## 0.3.1
 
 ### Patch Changes

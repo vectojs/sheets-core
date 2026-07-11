@@ -32,6 +32,58 @@ export function transformFormulaReferences(
   source: string,
   operation: SheetStructureOperation,
 ): string {
+  return rewriteFormulaReferences(
+    source,
+    (reference) => transformScalar(reference, operation),
+    (start, end) => transformRange(start, end, operation),
+  );
+}
+
+/** Translate relative A1 dimensions for fill/copy while preserving `$` markers. */
+export function translateFormulaReferences(
+  source: string,
+  rowDelta: number,
+  colDelta: number,
+  bounds: { rows: number; cols: number },
+): string {
+  return rewriteFormulaReferences(
+    source,
+    (reference) => {
+      const position = translateReference(
+        reference,
+        rowDelta,
+        colDelta,
+        bounds,
+      );
+      return position ? formatReference(position, reference) : "#REF!";
+    },
+    (start, end) => {
+      const translatedStart = translateReference(
+        start,
+        rowDelta,
+        colDelta,
+        bounds,
+      );
+      const translatedEnd = translateReference(end, rowDelta, colDelta, bounds);
+      const startSource = translatedStart
+        ? formatReference(translatedStart, start)
+        : "#REF!";
+      const endSource = translatedEnd
+        ? formatReference(translatedEnd, end)
+        : "#REF!";
+      return `${startSource}:${endSource}`;
+    },
+  );
+}
+
+function rewriteFormulaReferences(
+  source: string,
+  transformScalarReference: (reference: ParsedReference) => string,
+  transformRangeReference: (
+    start: ParsedReference,
+    end: ParsedReference,
+  ) => string,
+): string {
   if (!source.startsWith("=")) return source;
 
   let output = "";
@@ -48,7 +100,8 @@ export function transformFormulaReferences(
     const reference = !isIdentifierCharacter(source[index - 1])
       ? parseReference(source.slice(index))
       : null;
-    if (!reference || isIdentifierCharacter(source[index + reference.length])) {
+    const following = reference ? source[index + reference.length] : undefined;
+    if (!reference || isIdentifierCharacter(following) || following === "(") {
       output += character;
       index++;
       continue;
@@ -63,15 +116,32 @@ export function transformFormulaReferences(
       rangeEnd &&
       !isIdentifierCharacter(source[rangeStart + 1 + rangeEnd.length])
     ) {
-      output += transformRange(reference, rangeEnd, operation);
+      output += transformRangeReference(reference, rangeEnd);
       index = rangeStart + 1 + rangeEnd.length;
       continue;
     }
 
-    output += transformScalar(reference, operation);
+    output += transformScalarReference(reference);
     index += reference.length;
   }
   return output;
+}
+
+function translateReference(
+  reference: ParsedReference,
+  rowDelta: number,
+  colDelta: number,
+  bounds: { rows: number; cols: number },
+): CellPos | null {
+  const row = reference.rowAbsolute
+    ? reference.position.row
+    : reference.position.row + rowDelta;
+  const col = reference.columnAbsolute
+    ? reference.position.col
+    : reference.position.col + colDelta;
+  return row >= 0 && row < bounds.rows && col >= 0 && col < bounds.cols
+    ? { row, col }
+    : null;
 }
 
 function parseReference(source: string): ParsedReference | null {

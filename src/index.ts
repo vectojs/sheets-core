@@ -4,6 +4,7 @@ export * from "./model/SheetClipboard";
 export * from "./model/SheetAxisMetrics";
 export * from "./model/SheetHistory";
 export * from "./model/SheetModel";
+export * from "./model/SheetRangeTransfer";
 export * from "./model/SheetStructure";
 export * from "./model/Workbook";
 export * from "./model/WorkbookCodec";

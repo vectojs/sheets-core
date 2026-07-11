@@ -18,6 +18,13 @@ Sheet-level row and column metrics use sparse overrides: default-sized axes
 remain implicit, while resized axes survive snapshots, structural transforms,
 and transactional undo/redo for use by any rendering or automation adapter.
 
+Range transfer is also a Core document operation. `captureRange()` records a
+dense value/format payload, `transferRange()` tiles it while translating
+relative A1 references, and `SheetHistory.applyCellStates()` commits exact raw
+values and formats as one undoable transaction. Canvas fill handles, internal
+clipboard actions, CLI, and MCP consumers can therefore share one spreadsheet
+contract without importing rendering or browser state.
+
 ## Supported formulas
 
 The evaluator supports arithmetic, references, ranges, percent, exponentiation,
