@@ -78,6 +78,9 @@ describe("sortRange", () => {
     expect(() =>
       sortRange(model, { r1: 0, c1: 1, r2: 2, c2: 3 }, 0, "ascending"),
     ).toThrow("key column");
+    expect(() =>
+      sortRange(model, { r1: 0, c1: 1, r2: 2, c2: 3 }, Number.NaN, "ascending"),
+    ).toThrow("key column");
   });
 });
 

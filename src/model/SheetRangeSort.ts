@@ -24,7 +24,11 @@ export function sortRange(
   direction: SortDirection,
 ): CellStateWrite[] {
   const payload = captureRange(model, range);
-  if (keyColumn < range.c1 || keyColumn > range.c2)
+  if (
+    !Number.isInteger(keyColumn) ||
+    keyColumn < range.c1 ||
+    keyColumn > range.c2
+  )
     throw new RangeError("Sort key column is outside the sorted range");
   if (direction !== "ascending" && direction !== "descending")
     throw new RangeError("Sort direction is invalid");
